@@ -1,21 +1,30 @@
-export default async function handler(req, res) {
-  const { videoURL, imageURL } = req.body;
+import Replicate from "replicate";
 
-  const response = await fetch("https://api.replicate.com/v1/predictions", {
-    method: "POST",
-    headers: {
-      Authorization: "Token YOUR_REPLICATE_API_TOKEN",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      version: "YOUR_MODEL_VERSION_ID",
-      input: {
-        video: videoURL,
-        image: imageURL
-      },
-    }),
-  });
+export async function POST(req) {
+  try {
+    const { video, celebrity } = await req.json();
 
-  const data = await response.json();
-  res.status(200).json({ output: data?.output });
+    if (!video || !celebrity) {
+      return Response.json({ error: "Missing video or celebrity" }, { status: 400 });
+    }
+
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
+    });
+
+    const output = await replicate.run(
+      "xrunda/hello:ff74ff3ca2f4e4f49b3288e1c28fa1eb9e8b232d6c2aa8b9a2ce7266e104d7b5", // Example version ID
+      {
+        input: {
+          video: video,
+          target_face: celebrity,
+        },
+      }
+    );
+
+    return Response.json({ result: output });
+  } catch (error) {
+    console.error("Error in /api/process-video:", error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 }
