@@ -1,17 +1,17 @@
 {
   "name": "celebfaceswap",
   "version": "1.0.0",
-  "description": "Celebrity Face Swap app using Replicate and Cloudinary",
-  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
-    "cloudinary": "^1.37.2",
-    "next": "^13.4.12",
+    "next": "^13.5.11",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  }
+    "react-dom": "^18.2.0",
+    "replicate": "^0.19.7",
+    "cloudinary": "^1.37.1"
+  },
+  "type": "module"
 }
