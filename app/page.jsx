@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function Home() {
   const [videoFile, setVideoFile] = useState(null);
+  const [celebrity, setCelebrity] = useState("kanye west");
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState("");
   const [error, setError] = useState("");
@@ -16,7 +17,7 @@ export default function Home() {
 
   const handleProcess = async () => {
     if (!videoFile) {
-      setError("Please upload a video file first.");
+      setError("Please upload a video file.");
       return;
     }
 
@@ -24,25 +25,45 @@ export default function Home() {
     setError("");
     setResultUrl("");
 
-    const formData = new FormData();
-    formData.append("video", videoFile);
-
     try {
-      const response = await fetch("/api/process-video", {
+      // 1. Upload to Cloudinary
+      const uploadForm = new FormData();
+      uploadForm.append("video", videoFile);
+
+      const uploadRes = await fetch("/api/upload-video", {
         method: "POST",
-        body: formData,
+        body: uploadForm,
       });
 
-      const data = await response.json();
+      const uploadData = await uploadRes.json();
 
-      if (!response.ok) {
-        setError(data.error || "Something went wrong.");
-      } else {
-        // Assuming the API returns a URL to the processed video
-        setResultUrl(data.result.output_url || "");
+      if (!uploadRes.ok) {
+        throw new Error(uploadData.error || "Cloudinary upload failed");
       }
+
+      const cloudinaryUrl = uploadData.url;
+
+      // 2. Send to Replicate backend API
+      const replicateRes = await fetch("/api/process-video", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          video: cloudinaryUrl,
+          celebrity: celebrity,
+        }),
+      });
+
+      const replicateData = await replicateRes.json();
+
+      if (!replicateRes.ok) {
+        throw new Error(replicateData.error || "Failed to process video");
+      }
+
+      setResultUrl(replicateData.result.output_url || "");
     } catch (err) {
-      setError("Failed to process video. Try again.");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -55,15 +76,23 @@ export default function Home() {
 
       <input type="file" accept="video/*" onChange={handleFileChange} />
       <br />
+      <input
+        type="text"
+        placeholder="Enter celebrity (e.g. Kanye West)"
+        value={celebrity}
+        onChange={(e) => setCelebrity(e.target.value)}
+        style={{ marginTop: 10, padding: 8, width: "100%" }}
+      />
+      <br />
       <button onClick={handleProcess} disabled={loading} style={{ marginTop: 20, padding: "10px 20px" }}>
         {loading ? "Processing..." : "Process Video"}
       </button>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={{ color: "red", marginTop: 20 }}>{error}</p>}
 
       {resultUrl && (
-        <div style={{ marginTop: 20 }}>
-          <h2>Processed Video:</h2>
+        <div style={{ marginTop: 30 }}>
+          <h2>Result</h2>
           <video src={resultUrl} controls width="100%" />
         </div>
       )}
