@@ -26,7 +26,7 @@ export default function Home() {
     setResultUrl("");
 
     try {
-      // 1. Upload to Cloudinary
+      // Upload to Cloudinary
       const uploadForm = new FormData();
       uploadForm.append("video", videoFile);
 
@@ -43,7 +43,7 @@ export default function Home() {
 
       const cloudinaryUrl = uploadData.url;
 
-      // 2. Send to Replicate backend API
+      // Send to Replicate
       const replicateRes = await fetch("/api/process-video", {
         method: "POST",
         headers: {
@@ -58,7 +58,7 @@ export default function Home() {
       const replicateData = await replicateRes.json();
 
       if (!replicateRes.ok) {
-        throw new Error(replicateData.error || "Failed to process video");
+        throw new Error(replicateData.error || "Replicate processing failed");
       }
 
       setResultUrl(replicateData.result.output_url || "");
@@ -70,9 +70,9 @@ export default function Home() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "auto", padding: 20, textAlign: "center" }}>
-      <h1>Celebrity Face Swap</h1>
-      <p>Upload a video and choose a celebrity to swap into it.</p>
+    <div style={{ maxWidth: "600px", margin: "auto", padding: "40px", textAlign: "center", fontFamily: "Arial" }}>
+      <h1 style={{ fontSize: "2rem", marginBottom: "10px" }}>Celebrity Face Swap</h1>
+      <p style={{ marginBottom: "20px" }}>Upload a video and choose a celebrity to swap into it.</p>
 
       <input type="file" accept="video/*" onChange={handleFileChange} />
       <br />
@@ -81,10 +81,28 @@ export default function Home() {
         placeholder="Enter celebrity (e.g. Kanye West)"
         value={celebrity}
         onChange={(e) => setCelebrity(e.target.value)}
-        style={{ marginTop: 10, padding: 8, width: "100%" }}
+        style={{
+          marginTop: 12,
+          padding: 8,
+          width: "100%",
+          border: "1px solid #ccc",
+          borderRadius: 4,
+        }}
       />
       <br />
-      <button onClick={handleProcess} disabled={loading} style={{ marginTop: 20, padding: "10px 20px" }}>
+      <button
+        onClick={handleProcess}
+        disabled={loading}
+        style={{
+          marginTop: 20,
+          padding: "10px 20px",
+          backgroundColor: "#222",
+          color: "white",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+        }}
+      >
         {loading ? "Processing..." : "Process Video"}
       </button>
 
