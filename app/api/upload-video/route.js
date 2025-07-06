@@ -1,35 +1,33 @@
-import { v2 as cloudinary } from "cloudinary";
-import { NextResponse } from "next/server";
+import Replicate from "replicate";
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const formData = await request.formData();
-    const file = formData.get("video");
+    const { video, celebrity } = await req.json();
 
-    if (!file) {
-      return NextResponse.json({ error: "No video provided" }, { status: 400 });
+    console.log("Video URL:", video);
+    console.log("Celebrity:", celebrity);
+
+    if (!video || !celebrity) {
+      return Response.json({ error: "Missing video or celebrity" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    const uploadResponse = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { resource_type: "video" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      ).end(buffer);
+    const replicate = new Replicate({
+      auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    return NextResponse.json({ url: uploadResponse.secure_url });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const output = await replicate.run(
+      "xrunda/hello:ff74ff3ca2f4e4f49b3288e1c28fa1eb9e8b232d6c2aa8b9a2ce7266e104d7b5",
+      {
+        input: {
+          video: video,
+          target_face: celebrity,
+        },
+      }
+    );
+
+    return Response.json({ result: output });
+  } catch (error) {
+    console.error("Replicate Error:", error);
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
